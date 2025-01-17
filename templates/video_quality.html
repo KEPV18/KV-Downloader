@@ -1,0 +1,30 @@
+<!-- video_quality.html -->
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختر جودة الفيديو</title>
+</head>
+<body>
+    <h2>اختر جودة الفيديو</h2>
+    <form method="POST" action="/download">
+        <p>الفيديو: <b>{{ title }}</b></p>
+        <input type="hidden" name="video_url" value="{{ video_url }}">
+        
+        {% for format in formats %}
+            <label>
+                <input type="radio" name="quality" value="{{ format['format_id'] }}" required>
+                {{ format['format'] }} - {{ format['vcodec'] }} - {{ format['resolution'] }}
+            </label>
+            <br>
+        {% endfor %}
+        
+        <input type="hidden" name="download_path" value="{{ DOWNLOADS_FOLDER }}">
+        <input type="hidden" name="download_format" value="mp4">
+        
+        <br><br>
+        <button type="submit">تأكيد التنزيل</button>
+    </form>
+</body>
+</html>

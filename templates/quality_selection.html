@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Choose Quality</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            text-align: center;
+            padding: 50px;
+        }
+        h1 {
+            color: #343a40;
+        }
+        .selection-form {
+            margin: 20px auto;
+            max-width: 600px;
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .selection-form h2 {
+            color: #007bff;
+        }
+        select, input, button {
+            width: 300px;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="selection-form">
+        <h2>Choose Quality and Format</h2>
+        <p>Video Title: {{ title }}</p>
+        <form action="/quality_selection" method="POST">
+            <input type="hidden" name="video_url" value="{{ video_url }}">
+            
+            <label for="quality">Select Quality:</label>
+            <select id="quality" name="quality">
+                {% for format in formats %}
+                    <option value="{{ format['format_id'] }}">{{ format['format_note'] }}</option>
+                {% endfor %}
+            </select>
+            
+            <label for="format">Select Format:</label>
+            <select id="format" name="format">
+                <option value="mp4">MP4</option>
+                <option value="mp3">MP3</option>
+            </select>
+            
+            <label for="save_path">Select Save Path:</label>
+            <input type="text" id="save_path" name="save_path" placeholder="Enter save path here" required>
+            
+            <button type="submit">Start Download</button>
+        </form>
+    </div>
+
+</body>
+</html>

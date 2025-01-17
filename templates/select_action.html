@@ -1,0 +1,22 @@
+<!-- select_action.html -->
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختيار تحميل الفيديو أو الصوت</title>
+</head>
+<body>
+    <h2>حدد نوع التنزيل</h2>
+    <form method="POST" action="/process">
+        <p>الفيديو أو الصوت: <b>{{ title }}</b></p>
+        <input type="hidden" name="video_url" value="{{ video_url }}">
+        
+        <label><input type="radio" name="action" value="mp4" required> فيديو</label>
+        <br>
+        <label><input type="radio" name="action" value="mp3" required> صوت</label>
+        <br><br>
+        <button type="submit">تأكيد</button>
+    </form>
+</body>
+</html>

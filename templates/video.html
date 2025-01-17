@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Video Quality</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>Select Video Quality</h1>
+    <form method="POST" action="/">
+        <input type="hidden" name="link" value="{{ link }}">
+        <input type="hidden" name="option" value="video">
+        <label for="quality">Available Qualities:</label>
+        <select name="quality">
+            {% for q in qualities %}
+                <option value="{{ q }}">{{ q }}</option>
+            {% endfor %}
+        </select><br><br>
+        <label for="download_folder">Choose download folder:</label>
+        <input type="checkbox" id="use_default" name="use_default" checked>
+        <label for="use_default">Use default Downloads</label>
+        <br>
+        <label for="file_name">File name:</label>
+        <input type="text" name="file_name" placeholder="Enter custom filename"><br><br>
+        <input type="submit" value="Download">
+    </form>
+</body>
+</html>

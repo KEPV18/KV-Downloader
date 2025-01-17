@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Video Download Status</title>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        /* إعدادات عامة */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f8f9fa;
+            text-align: center;
+            padding: 50px;
+        }
+        header {
+            background: linear-gradient(135deg, #8e44ad, #6a0dad); /* تدرج لوني */
+            color: white;
+            padding: 40px; /* زيادة padding */
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); /* ظل */
+        }
+        footer {
+            background-color: #343a40; /* لون خلفية داكن */
+            color: white;
+            text-align: center;
+            padding: 20px 0; /* padding للفوتر */
+            position: relative;
+            bottom: 0;
+            width: 100%;
+        }
+        .status {
+            margin: 20px auto;
+            max-width: 600px;
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .status h2 {
+            color: #007bff;
+        }
+        .status p {
+            color: #495057;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Video Download Status</h1>
+        <p>Powered by Ahmed Khaled</p>
+    </header>
+
+    <div class="status">
+        <h2>Status: {{ title }}</h2>
+        <p>{{ msg }}</p>
+        <p>Save Location: <a href="{{ path }}">{{ path }}</a></p>
+        <p id="progress-info"></p>
+        <p id="countdown" style="font-size: 24px; color: red;"></p>
+    </div>
+
+    <footer>
+        <p>© 2023 KV Downloader. All rights reserved.</p>
+    </footer>
+
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script>
+        const socket = io();
+        socket.on('connect', function() {
+            console.log('Connected to server');
+        });
+
+        socket.on('progress', function(data) {
+            const progressInfo = document.getElementById('progress-info');
+            progressInfo.innerHTML = `جاري التحميل...<br>
+                                      Quality: ${data.format}<br>
+                                      Downloaded Size: ${data.downloaded} bytes<br>
+                                      Total Size: ${data.total} bytes<br>
+                                      Speed: ${data.speed} bytes/second<br>
+                                      Percentage: ${data.percentage.toFixed(2)}%`;
+        });
+
+        socket.on('finished', function(data) {
+            const progressInfo = document.getElementById('progress-info');
+            progressInfo.innerHTML = `تم التحميل: ${data.filename} <span style="font-size: 48px; color: green;">✔️</span>`;
+            let countdown = 5;
+            const countdownElement = document.getElementById('countdown');
+            countdownElement.innerHTML = `سيتم نقلك إلى الصفحة الرئيسية بعد ${countdown} ثوانٍ`;
+            
+            const interval = setInterval(function() {
+                countdown--;
+                countdownElement.innerHTML = `سيتم نقلك إلى الصفحة الرئيسية بعد ${countdown} ثوانٍ`;
+                if (countdown <= 0) {
+                    clearInterval(interval);
+                    window.location.href = 'index.html';
+                }
+            }, 1000);
+        });
+    </script>
+
+</body>
+</html>

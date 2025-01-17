@@ -1,0 +1,17 @@
+<!-- playlist_info.html -->
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>معلومات قائمة التشغيل</title>
+</head>
+<body>
+    <h2>معلومات قائمة التشغيل: <b>{{ title }}</b></h2>
+    <ul>
+        {% for entry in playlist %}
+            <li><a href="{{ entry['url'] }}">{{ entry['title'] }}</a> (مدة: {{ entry['duration'] }}s)</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

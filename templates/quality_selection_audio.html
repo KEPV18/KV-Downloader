@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Audio Quality</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>Select Audio Quality for {{ title }}</h1>
+    <form method="POST" action="/quality_selection_audio">
+        <input type="hidden" name="video_url" value="{{ video_url }}">
+        
+        <label for="download_path">Download Path:</label>
+        <input type="checkbox" id="use_default" name="use_default" checked>
+        <label for="use_default">Use default Downloads</label><br>
+        <input type="text" name="download_path" placeholder="Enter custom download folder"><br><br>
+        
+        <input type="submit" value="Download">
+    </form>
+</body>
+</html>

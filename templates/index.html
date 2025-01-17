@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>KV Downloader</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        /* إعدادات عامة */
+        body {
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            background-color: #f8f9fa; /* لون خلفية فاتح */
+            color: #333; /* لون نص داكن */
+        }
+
+        /* الهيدر */
+        header {
+            background: linear-gradient(135deg, #8e44ad, #6a0dad); /* تدرج لوني */
+            color: white;
+            padding: 40px; /* زيادة padding */
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); /* ظل */
+        }
+
+        /* تصميم متجاوب */
+        .ad-space {
+            height: 100px; /* ارتفاع المساحة الإعلانية */
+            background-color: #ccc; /* لون خلفية المساحة الإعلانية */
+            margin: 20px 0; /* هوامش */
+        }
+
+        /* تنسيق الفوتر */
+        footer {
+            background-color: #343a40; /* لون خلفية داكن */
+            color: white;
+            text-align: center;
+            padding: 20px 0; /* padding للفوتر */
+            position: relative;
+            bottom: 0;
+            width: 100%;
+        }
+
+        /* تنسيق الأزرار */
+        .btn-primary {
+            background-color: #007bff; /* لون زر رئيسي */
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3; /* لون زر عند التمرير */
+        }
+    </style>
+    <script>
+        async function updateVideoTitle() {
+            const videoUrl = document.getElementById('video_url').value;
+            const videoTypeSelect = document.getElementById('video_type');
+            if (videoUrl) {
+                try {
+                    const response = await fetch('/get_video_title', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ url: videoUrl }),
+                    });
+                    const data = await response.json();
+                    const videoTitle = data.title || "Unknown video title";
+                    document.getElementById('video_title').innerText = videoTitle;
+
+                    // Enable quality options after fetching data
+                    videoTypeSelect.innerHTML = '';
+                    if (data.available_formats && data.available_formats.length > 0) {
+                        data.available_formats.forEach(format => {
+                            const option = document.createElement('option');
+                            option.value = format.format_id;
+                            option.textContent = format.format_note;
+                            videoTypeSelect.appendChild(option);
+                        });
+                        videoTypeSelect.disabled = false;
+                    } else {
+                        videoTypeSelect.innerHTML = '<option value="">No available formats</option>';
+                        videoTypeSelect.disabled = true;
+                    }
+                } catch (error) {
+                    console.error('Error fetching video title:', error);
+                    document.getElementById('video_title').innerText = 'An error occurred while fetching the video title';
+                }
+            } else {
+                document.getElementById('video_title').innerText = '';
+                videoTypeSelect.innerHTML = '<option value="">Select quality</option>';
+                videoTypeSelect.disabled = true;
+            }
+        }
+    </script>
+</head>
+<body>
+    <header>
+        <h1>KV Downloader</h1>
+        <p>Powered by Ahmed Khaled</p>
+    </header>
+    <div class="container text-center">
+        <div class="ad-space">إعلان </div>
+        <form method="post" class="mb-4">
+            <label for="video_url">YouTube Video URL:</label><br>
+            <input type="text" id="video_url" name="video_url" required oninput="updateVideoTitle()" class="form-control"><br>
+
+            <h2 id="video_title"></h2>
+
+            <label for="video_type">Select format and quality:</label><br>
+            <select id="video_type" name="video_type" disabled class="form-control">
+                <option value="">Select quality</option>
+            </select><br>
+
+            <label for="save_path">Save location:</label><br>
+            <input type="text" id="save_path" name="save_path" placeholder="./downloads/" class="form-control"><br>
+
+            <button type="submit" class="btn btn-primary">Download</button>
+        </form>
+        <div class="ad-space">إعلان </div>
+    </div>
+    <footer>
+        <p>© 2023 KV Downloader. All rights reserved.</p>
+    </footer>
+</body>
+</html>
