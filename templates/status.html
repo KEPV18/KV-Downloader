@@ -1,9 +1,11 @@
 <!DOCTYPE html>
-<html>
+<html dir="rtl">
 <head>
-    <title>Video Download Status</title>
-    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <title>حالة التحميل</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <style>
         /* إعدادات عامة */
         body {
@@ -44,91 +46,76 @@
         }
     </style>
 </head>
-<body>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <div class="bg-white rounded-lg shadow-lg p-6 max-w-2xl mx-auto">
+            <h1 class="text-2xl font-bold mb-4 text-center">حالة تحميل الفيديو</h1>
+            
+            <div class="mb-4">
+                <p class="text-lg mb-2">اسم الفيديو: <span class="font-semibold">{{ title }}</span></p>
+            </div>
 
-    <header>
-        <h1>Video Download Status</h1>
-        <p>Powered by Ahmed Khaled</p>
-    </header>
+            <div class="relative pt-1">
+                <div class="flex mb-2 items-center justify-between">
+                    <div>
+                        <span id="status-text" class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blue-600 bg-blue-200">
+                            جاري التحميل...
+                        </span>
+                    </div>
+                    <div class="text-left">
+                        <span id="progress-text" class="text-xs font-semibold inline-block text-blue-600">
+                            0%
+                        </span>
+                    </div>
+                </div>
+                <div class="overflow-hidden h-2 mb-4 text-xs flex rounded bg-blue-200">
+                    <div id="progress" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-500" style="width: 0%"></div>
+                </div>
+            </div>
 
-    <div class="status">
-        <h2>Status: {{ title }}</h2>
-        <p>{{ msg }}</p>
-        <p>Save Location: <a href="{{ path }}">{{ path }}</a></p>
-        <p id="progress-info"></p>
-        <p id="countdown" style="font-size: 24px; color: red;"></p>
-        <p id="download-link" style="display: none;">
-            <a id="file-download" class="btn btn-success" href="#" style="margin-top: 20px;">Download File</a>
-        </p>
-        <button id="check-file-btn" class="btn btn-primary" style="margin-top: 20px;">Check File Availability</button>
-        <p id="file-status" style="margin-top: 20px;"></p>
+            <div id="download-info" class="mt-4 text-center hidden">
+                <p class="text-green-600 font-semibold mb-2">تم اكتمال التحميل!</p>
+                <a id="manual-download" href="#" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                    تحميل الملف
+                </a>
+            </div>
+        </div>
     </div>
 
-    <footer>
-        <p>© 2023 KV Downloader. All rights reserved.</p>
-    </footer>
-
-    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script>
-        const socket = io();
-        socket.on('connect', function() {
-            console.log('Connected to server');
-        });
-
+        var socket = io();
+        var downloadStarted = false;
+        
         socket.on('progress', function(data) {
-            const progressInfo = document.getElementById('progress-info');
-            progressInfo.innerHTML = `جاري التحميل...<br>
-                                      Quality: ${data.format}<br>
-                                      Downloaded Size: ${data.downloaded} bytes<br>
-                                      Total Size: ${data.total} bytes<br>
-                                      Speed: ${data.speed} bytes/second<br>
-                                      Percentage: ${data.percentage.toFixed(2)}%`;
+            var percentage = data.percentage;
+            document.getElementById('progress').style.width = percentage + '%';
+            document.getElementById('progress-text').innerText = Math.round(percentage) + '%';
         });
 
         socket.on('finished', function(data) {
-            const progressInfo = document.getElementById('progress-info');
-            progressInfo.innerHTML = `تم التحميل: ${data.filename} <span style="font-size: 48px; color: green;">✔️</span>`;
-            let countdown = 5;
-            const countdownElement = document.getElementById('countdown');
-            countdownElement.innerHTML = `سيتم نقلك إلى الصفحة الرئيسية بعد ${countdown} ثوانٍ`;
-
-            // إعداد رابط التحميل
-            const downloadLink = document.getElementById('file-download');
-            downloadLink.href = data.download_link; // تعيين رابط التحميل
-            document.getElementById('download-link').style.display = 'block'; // إظهار رابط التحميل
-
-            // بدء التحميل تلقائيًا
-            setTimeout(() => {
-                window.location.href = data.download_link; // بدء تحميل الملف
-            }, 1000); // تأخير 1 ثانية قبل بدء التحميل
-
-            const interval = setInterval(function() {
-                countdown--;
-                countdownElement.innerHTML = `سيتم نقلك إلى الصفحة الرئيسية بعد ${countdown} ثوانٍ`;
-                if (countdown <= 0) {
-                    clearInterval(interval);
-                    window.location.href = 'index.html';
-                }
-            }, 1000);
-        });
-
-        document.getElementById('check-file-btn').addEventListener('click', function() {
-            const filename = '{{ title }}.mp4'; // تأكد من استخدام اسم الملف الصحيح
-            fetch(`/check_file/${filename}`)
-                .then(response => response.json())
-                .then(data => {
-                    const fileStatus = document.getElementById('file-status');
-                    if (data.available) {
-                        fileStatus.innerHTML = `الملف متاح! يمكنك تحميله <a href="${data.download_link}" target="_blank">هنا</a>.`;
-                    } else {
-                        fileStatus.innerHTML = `لا يوجد ملف متاح.`;
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                });
+            document.getElementById('status-text').innerText = 'تم اكتمال التحميل!';
+            document.getElementById('status-text').classList.remove('bg-blue-200', 'text-blue-600');
+            document.getElementById('status-text').classList.add('bg-green-200', 'text-green-600');
+            document.getElementById('progress').style.width = '100%';
+            
+            // إظهار قسم معلومات التحميل
+            document.getElementById('download-info').classList.remove('hidden');
+            
+            // إعداد رابط التحميل اليدوي
+            var manualDownloadBtn = document.getElementById('manual-download');
+            manualDownloadBtn.href = data.download_link;
+            
+            // بدء التحميل التلقائي
+            if (!downloadStarted) {
+                downloadStarted = true;
+                var downloadLink = document.createElement('a');
+                downloadLink.href = data.download_link;
+                downloadLink.download = data.filename;
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+            }
         });
     </script>
-
 </body>
 </html>
