@@ -57,6 +57,9 @@
         <p>Save Location: <a href="{{ path }}">{{ path }}</a></p>
         <p id="progress-info"></p>
         <p id="countdown" style="font-size: 24px; color: red;"></p>
+        <p id="download-link" style="display: none;">
+            <a id="file-download" class="btn btn-success" href="#" style="margin-top: 20px;">Download File</a>
+        </p>
     </div>
 
     <footer>
@@ -86,7 +89,17 @@
             let countdown = 5;
             const countdownElement = document.getElementById('countdown');
             countdownElement.innerHTML = `سيتم نقلك إلى الصفحة الرئيسية بعد ${countdown} ثوانٍ`;
-            
+
+            // إعداد رابط التحميل
+            const downloadLink = document.getElementById('file-download');
+            downloadLink.href = data.download_link; // تعيين رابط التحميل
+            document.getElementById('download-link').style.display = 'block'; // إظهار رابط التحميل
+
+            // بدء التحميل تلقائيًا
+            setTimeout(() => {
+                window.location.href = data.download_link; // بدء تحميل الملف
+            }, 1000); // تأخير 1 ثانية قبل بدء التحميل
+
             const interval = setInterval(function() {
                 countdown--;
                 countdownElement.innerHTML = `سيتم نقلك إلى الصفحة الرئيسية بعد ${countdown} ثوانٍ`;

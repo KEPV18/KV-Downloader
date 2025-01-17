@@ -3,7 +3,6 @@ from yt_dlp import YoutubeDL
 import os
 import shutil
 from flask_socketio import SocketIO, emit
-import time
 
 app = Flask(__name__)
 socketio = SocketIO(app)
@@ -67,7 +66,9 @@ def download_progress_hook(d):
         })
     elif d['status'] == 'finished':
         print(f"تم التحميل بنجاح: {d['filename']}")
-        socketio.emit('finished', {'filename': d['filename']})  # إرسال إشعار بالانتهاء
+        # إضافة رابط التحميل للمستخدم
+        download_link = url_for('send_file', filename=d['filename'], _external=True)
+        socketio.emit('finished', {'filename': d['filename'], 'download_link': download_link})  # إرسال إشعار بالانتهاء مع رابط التحميل
 
 
 # لعرض الملفات التي تم تحميلها
