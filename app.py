@@ -4,7 +4,6 @@ import os
 import shutil
 from flask_socketio import SocketIO, emit
 import time
-import uuid  # استيراد مكتبة UUID
 
 app = Flask(__name__)
 socketio = SocketIO(app)
@@ -32,16 +31,13 @@ def index():
                 cookie_file.write("# Edit at your own risk.\n")
                 cookie_file.write(".example.com\tTRUE\t/\tFALSE\t0\tname\tvalue\n")  # استبدل هذا بالبيانات الفعلية للكوكيز
 
-        user_download_folder = os.path.join(DOWNLOADS_FOLDER, str(uuid.uuid4()))  # إنشاء مجلد مؤقت باستخدام UUID
-        os.makedirs(user_download_folder, exist_ok=True)  # إنشاء المجلد إذا لم يكن موجودًا
-
         # إعداد المكتبة yt_dlp
         ydl_opts = {
             'format': 'best',
-            'outtmpl': os.path.join(user_download_folder, '%(title)s.%(ext)s'),  # استخدام المجلد المؤقت
-            'cookiefile': cookie_file_path,
-            'cookie': 'browser',
-            'progress_hooks': [download_progress_hook],
+            'outtmpl': os.path.join(save_path, '%(title)s.%(ext)s'),
+            'cookiefile': cookie_file_path,  # استخدام ملف الكوكيز الذي تم إنشاؤه أو الموجود
+            'cookie': 'browser',  # استخدام الكوكيز من المتصفح
+            'progress_hooks': [download_progress_hook],  # إضافة دالة التقدم
         }
         
         try:
@@ -50,7 +46,7 @@ def index():
                 info_dict = ydl.extract_info(video_url, download=True)
                 video_title = info_dict.get('title', 'غير معروف')  # الحصول على اسم الفيديو
                 available_formats = info_dict.get('formats', [])  # الحصول على الجودات المتاحة
-                return redirect(url_for('send_file', filename=f"{video_title}.mp4", user_folder=user_download_folder))  # إعادة التوجيه إلى دالة send_file مع مسار المجلد
+                return redirect(url_for('status', title=video_title, path=save_path))  # إعادة التوجيه إلى صفحة الحالة
 
         except Exception as e:
             return f"حدث خطأ: {e}"
@@ -75,21 +71,22 @@ def download_progress_hook(d):
 
 
 # لعرض الملفات التي تم تحميلها
-@app.route('/downloads/<user_folder>/<filename>')
-def send_file(user_folder, filename):
+@app.route('/downloads/<filename>')
+def send_file(filename):
     # إرسال الملف مباشرة إلى المستخدم
-    response = send_from_directory(user_folder, filename)
+    response = send_from_directory(DOWNLOADS_FOLDER, filename)
     
-    # حذف المجلد بعد 5 دقائق
-    socketio.start_background_task(delete_folder_after_delay, user_folder)
+    # حذف الملف بعد 5 دقائق
+    socketio.start_background_task(delete_file_after_delay, filename)
     
     return response
 
-def delete_folder_after_delay(user_folder):
+def delete_file_after_delay(filename):
     time.sleep(300)  # الانتظار لمدة 5 دقائق
-    if os.path.exists(user_folder):
-        shutil.rmtree(user_folder)  # حذف المجلد من السيرفر
-        print(f"تم حذف المجلد: {user_folder}")
+    file_path = os.path.join(DOWNLOADS_FOLDER, filename)
+    if os.path.exists(file_path):
+        os.remove(file_path)  # حذف الملف من السيرفر
+        print(f"تم حذف الملف: {filename}")
 
 @app.route('/get_video_title', methods=['POST'])
 def get_video_title():
