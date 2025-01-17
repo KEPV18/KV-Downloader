@@ -60,6 +60,8 @@
         <p id="download-link" style="display: none;">
             <a id="file-download" class="btn btn-success" href="#" style="margin-top: 20px;">Download File</a>
         </p>
+        <button id="check-file-btn" class="btn btn-primary" style="margin-top: 20px;">Check File Availability</button>
+        <p id="file-status" style="margin-top: 20px;"></p>
     </div>
 
     <footer>
@@ -108,6 +110,23 @@
                     window.location.href = 'index.html';
                 }
             }, 1000);
+        });
+
+        document.getElementById('check-file-btn').addEventListener('click', function() {
+            const filename = '{{ title }}.mp4'; // تأكد من استخدام اسم الملف الصحيح
+            fetch(`/check_file/${filename}`)
+                .then(response => response.json())
+                .then(data => {
+                    const fileStatus = document.getElementById('file-status');
+                    if (data.available) {
+                        fileStatus.innerHTML = `الملف متاح! يمكنك تحميله <a href="${data.download_link}" target="_blank">هنا</a>.`;
+                    } else {
+                        fileStatus.innerHTML = `لا يوجد ملف متاح.`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
         });
     </script>
 

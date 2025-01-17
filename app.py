@@ -118,5 +118,13 @@ def status():
     path = request.args.get('path', '')
     return render_template('status.html', title=title, path=path, msg="تم التحميل")  # تحديث الرسالة هنا
 
+@app.route('/check_file/<filename>', methods=['GET'])
+def check_file(filename):
+    file_path = os.path.join(DOWNLOADS_FOLDER, filename)
+    if os.path.exists(file_path):
+        return jsonify({'available': True, 'download_link': url_for('send_file', filename=filename, _external=True)})
+    else:
+        return jsonify({'available': False})
+
 if __name__ == '__main__':
     socketio.run(app, debug=True)
