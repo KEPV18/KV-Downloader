@@ -24,6 +24,7 @@ def index():
             ydl_opts = {
                 'format': 'best',
                 'outtmpl': os.path.join(save_path, '%(title)s.%(ext)s'),
+                'cookies': 'path/to/cookies.txt',  # مسار ملف تعريف الارتباط
                 'progress_hooks': [download_progress_hook],  # إضافة دالة التقدم
             }
             
