@@ -17,7 +17,7 @@ def index():
     if request.method == 'POST':
         video_url = request.form['video_url']
         save_path = request.form.get('save_path', DOWNLOADS_FOLDER)
-        cookie_file_path = os.path.join(save_path, 'cookies.txt')
+        cookie_file_path = './templates/cookies.txt'  # تحديد مسار ملف الكوكيز بشكل مباشر
 
         # التحقق مما إذا كان ملف الكوكيز موجودًا
         if not os.path.exists(cookie_file_path):
@@ -85,6 +85,7 @@ def get_video_title():
         ydl_opts = {
             'format': 'best',
             'quiet': True,
+            'cookiefile': './templates/cookies.txt',  # تحديد مسار ملف الكوكيز
         }
         with YoutubeDL(ydl_opts) as ydl:
             info_dict = ydl.extract_info(video_url, download=False)
