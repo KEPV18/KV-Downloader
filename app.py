@@ -15,6 +15,10 @@ downloaded_files = {}  # لتتبع الملفات المحملة وحالتها
 
 @app.before_request
 def cleanup_old_files():
+    """
+    يتم تنفيذ هذه الدالة قبل كل طلب HTTP.
+    تستخدم لتنظيف الملفات القديمة التي مر عليها أكثر من 300 ثانية (5 دقائق).
+    """
     current_time = time.time()
     files_to_delete = []
     for filename, info in downloaded_files.items():
@@ -32,8 +36,13 @@ def cleanup_old_files():
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
+    """
+    الصفحة الرئيسية لرفع رابط الفيديو وتحميله.
+    عند إرسال POST يتم جلب رابط الفيديو وتحميله عبر yt_dlp.
+    """
     video_title = None  # متغير لتخزين اسم الفيديو
     available_formats = []  # قائمة لتخزين الجودات المتاحة
+
     if request.method == 'POST':
         video_url = request.form['video_url']
         save_path = request.form.get('save_path', DOWNLOADS_FOLDER)
@@ -41,7 +50,7 @@ def index():
 
         # التحقق مما إذا كان ملف الكوكيز موجودًا
         if not os.path.exists(cookie_file_path):
-            # إنشاء ملف الكوكيز وتخزينه في السيرفر
+            # إنشاء ملف الكوكيز وتخزينه في السيرفر (في حال احتجت ذلك)
             with open(cookie_file_path, 'w') as cookie_file:
                 # كتابة بيانات الكوكيز بتنسيق Netscape
                 cookie_file.write("# Netscape HTTP Cookie File\n")
@@ -55,7 +64,7 @@ def index():
             'format': 'best',
             'outtmpl': os.path.join(save_path, '%(title)s.%(ext)s'),
             'cookiefile': cookie_file_path,  # استخدام ملف الكوكيز الذي تم إنشاؤه أو الموجود
-            'cookie': 'browser',  # استخدام الكوكيز من المتصفح
+            'cookie': 'browser',             # استخدام الكوكيز من المتصفح
             'progress_hooks': [download_progress_hook],  # إضافة دالة التقدم
         }
         
@@ -64,34 +73,53 @@ def index():
                 # الحصول على معلومات الفيديو وتحميله
                 info_dict = ydl.extract_info(video_url, download=True)
                 video_title = info_dict.get('title', 'غير معروف')  # الحصول على اسم الفيديو
-                available_formats = info_dict.get('formats', [])  # الحصول على الجودات المتاحة
+                available_formats = info_dict.get('formats', [])    # الحصول على الجودات المتاحة
                 return redirect(url_for('status', title=video_title, path=save_path))  # إعادة التوجيه إلى صفحة الحالة
 
         except Exception as e:
             return f"حدث خطأ: {str(e)}"
+
     return render_template('index.html', video_title=video_title, available_formats=available_formats)
 
 def download_progress_hook(d):
+    """
+    دالة تتعامل مع أحداث التحميل من yt_dlp
+    'status' يمكن أن يكون 'downloading' أو 'finished' أو 'error'
+    """
     if d['status'] == 'downloading':
         try:
             socketio.emit('progress', {
                 'filename': os.path.basename(d['filename']),
                 'downloaded': d['downloaded_bytes'],
-                'total': d['total_bytes'],
-                'speed': d['speed'],
-                'percentage': d['downloaded_bytes'] / d['total_bytes'] * 100 if d['total_bytes'] > 0 else 0
+                'total': d.get('total_bytes', 0),
+                'speed': d.get('speed', 0),
+                'percentage': (d['downloaded_bytes'] / d['total_bytes'] * 100) if d.get('total_bytes', 0) else 0
             })
         except Exception as e:
             print(f"Error in progress hook: {str(e)}")
+
     elif d['status'] == 'finished':
         print(f"تم التحميل بنجاح: {d['filename']}")
-        # إضافة رابط التحميل للمستخدم
-        download_link = url_for('download_file', filename=d['filename'], _external=True)
-        socketio.emit('finished', {'filename': d['filename'], 'download_link': download_link})  # إرسال إشعار بالانتهاء مع رابط التحميل
+        # إضافة الملف لقاموس downloaded_files مع تسجيل المسار والوقت
+        filename_only = os.path.basename(d['filename'])
+        downloaded_files[filename_only] = {
+            'path': d['filename'],
+            'timestamp': time.time()
+        }
+        # إنشاء رابط التحميل للمستخدم
+        download_link = url_for('download_file', filename=filename_only, _external=True)
+        socketio.emit('finished', {
+            'filename': filename_only,
+            'download_link': download_link
+        })
 
-# لعرض الملفات التي تم تحميلها
 @app.route('/download/<filename>')
 def download_file(filename):
+    """
+    راوت لإرسال الملف للمستخدم كتحميل (attachment).
+    يتأكد أولًا من وجود الملف في القاموس downloaded_files ومن وجوده فعليًا.
+    بعد الإرسال، ينشئ Thread يحذف الملف بعد 5 دقائق.
+    """
     try:
         if filename in downloaded_files:
             file_path = downloaded_files[filename]['path']
@@ -104,6 +132,7 @@ def download_file(filename):
                 )
                 response.headers["Content-Disposition"] = f"attachment; filename={filename}"
                 
+                # دالة داخلية لحذف الملف بعد 5 دقائق
                 def delete_later():
                     time.sleep(300)
                     if os.path.exists(file_path):
@@ -119,7 +148,12 @@ def download_file(filename):
         return "الملف غير موجود", 404
     except Exception as e:
         return f"حدث خطأ أثناء التحميل: {str(e)}", 500
+
 def delete_file_after_delay(filename):
+    """
+    دالة مساعدة لحذف الملف بعد فترة (5 دقائق).
+    يمكنك استدعاؤها إن أردت التعامل بها بدلاً من الـ Thread مباشرة في مكان آخر.
+    """
     time.sleep(300)  # الانتظار لمدة 5 دقائق
     file_path = os.path.join(DOWNLOADS_FOLDER, filename)
     if os.path.exists(file_path):
@@ -128,10 +162,13 @@ def delete_file_after_delay(filename):
 
 @app.route('/get_video_title', methods=['POST'])
 def get_video_title():
+    """
+    جلب عنوان الفيديو والجودات المتاحة دون تنزيله (استخدام download=False).
+    """
     data = request.get_json()
     video_url = data.get('url')
     title = "غير معروف"  # القيمة الافتراضية
-    available_formats = []  # قائمة لتخزين الجودات المتاحة
+    available_formats = []
 
     try:
         ydl_opts = {
@@ -141,30 +178,43 @@ def get_video_title():
         }
         with YoutubeDL(ydl_opts) as ydl:
             info_dict = ydl.extract_info(video_url, download=False)
-            title = info_dict.get('title', 'غير معروف')  # الحصول على اسم الفيديو
-            available_formats = info_dict.get('formats', [])  # الحصول على الجودات المتاحة
+            title = info_dict.get('title', 'غير معروف')
+            available_formats = info_dict.get('formats', [])
     except Exception as e:
         print(f"Error: {e}")
 
-    return jsonify({'title': title, 'available_formats': available_formats})  # إعادة الجودات المتاحة مع اسم الفيديو
+    return jsonify({'title': title, 'available_formats': available_formats})
 
-# إضافة دالة جديدة لعرض صفحة الحالة
 @app.route('/status')
 def status():
+    """
+    صفحة بسيطة لعرض حالة التحميل أو رسالة النجاح.
+    """
     title = request.args.get('title', 'غير معروف')
     path = request.args.get('path', '')
-    return render_template('status.html', title=title, path=path, msg="تم التحميل")  # تحديث الرسالة هنا
+    return render_template('status.html', title=title, path=path, msg="تم التحميل")
 
 @app.route('/check_file/<filename>', methods=['GET'])
 def check_file(filename):
+    """
+    للتحقق إن كان الملف أصبح جاهزًا للتحميل (على السيرفر).
+    """
     file_path = os.path.join(DOWNLOADS_FOLDER, filename)
     if os.path.exists(file_path):
-        return jsonify({'available': True, 'download_link': url_for('send_file', filename=filename, _external=True)})
+        return jsonify({
+            'available': True,
+            # تم تصحيح الراوت هنا أيضاً
+            'download_link': url_for('download_file', filename=filename, _external=True)
+        })
     else:
         return jsonify({'available': False})
 
 if __name__ == '__main__':
+    # تنظيف المجلد downloads إذا كان موجودًا مسبقًا
     if os.path.exists(DOWNLOADS_FOLDER):
-        shutil.rmtree(DOWNLOADS_FOLDER)  # تنظيف المجلد عند بدء التشغيل
-    os.makedirs(DOWNLOADS_FOLDER)  # إنشاء مجلد التحميلات
+        shutil.rmtree(DOWNLOADS_FOLDER)
+    # إنشاء مجلد التحميلات
+    os.makedirs(DOWNLOADS_FOLDER)
+
+    # تشغيل التطبيق مع SocketIO
     socketio.run(app, debug=True)
