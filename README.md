@@ -11,11 +11,11 @@ python app.py
 
 ## Cookies
 
-Some downloads need a logged-in session. The app reads a Netscape-format cookie file at `./templates/cookies.txt`; if the file is missing, the download helper creates a placeholder with no real data (see `app.py`).
+Some downloads need a logged-in session. In `app.py` the app points yt-dlp at a Netscape-format cookie file at `./templates/cookies.txt`.
 
-- Do not commit cookie files. They are session credentials. `.gitignore` excludes them.
+- The file is no longer in this repository. Without it, behavior depends on the code path: one helper (near line 49 of `app.py`) writes a placeholder file with fake data when none exists, while the other download call (near line 177) passes the same path and has not been tested without the file. Expect that downloads needing a login may fail until you provide your own cookies.
+- If you use your own cookies, export them locally to that path and keep them out of Git. They are session credentials. `.gitignore` excludes them.
 - `cookies.txt.example` shows the file format with fake values only.
-- If you use your own cookies, export them locally and keep them out of Git.
 
 ## Notes
 
