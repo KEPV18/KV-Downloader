@@ -1,0 +1,5 @@
+# Netscape HTTP Cookie File
+# Template only. Contains no real data.
+# If you need logged-in downloads, export your own cookies locally, save them as
+# cookies.txt outside version control, and never commit that file.
+.example.com	TRUE	/	FALSE	0	name	value
