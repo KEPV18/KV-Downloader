@@ -1,0 +1,4 @@
+# Never commit browser cookie exports or other session files
+cookies.txt
+*.cookies
+templates/cookies.txt
